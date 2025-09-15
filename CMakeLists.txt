@@ -45,11 +45,8 @@ add_executable(Controle_PI_Servo_Temperatura
 pico_set_program_name(Controle_PI_Servo_Temperatura "Controle_PI_Servo_Temperatura")
 pico_set_program_version(Controle_PI_Servo_Temperatura "0.1")
 
-# Habilitar saída via UART (comunicação serial)
-pico_enable_stdio_uart(Controle_PI_Servo_Temperatura 1)
-
-# Habilitar saída via USB (para debugging)
-pico_enable_stdio_usb(Controle_PI_Servo_Temperatura 1)
+pico_enable_stdio_uart(Controle_PI_Servo_Temperatura 1) # Habilitar saída via UART (comunicação serial)
+pico_enable_stdio_usb(Controle_PI_Servo_Temperatura 1) # Habilitar saída via USB (para debugging)
 
 # Incluir diretórios de header files para o executável
 target_include_directories(Controle_PI_Servo_Temperatura PRIVATE
@@ -57,12 +54,12 @@ target_include_directories(Controle_PI_Servo_Temperatura PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/lib
 )
 
-
 target_link_libraries(Controle_PI_Servo_Temperatura
     pico_stdlib
     hardware_i2c
     hardware_gpio
     hardware_pwm
+    
     )
 
 # Gerar arquivos de saída adicionais (.uf2, .hex, etc.)
