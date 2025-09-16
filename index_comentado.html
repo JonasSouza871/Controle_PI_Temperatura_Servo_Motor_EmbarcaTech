@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard de Controle - Pico W</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* --- ESTILOS GERAIS --- */
+      :root {
+        --cor-fundo: #f0f2f5;
+        --cor-container: #ffffff;
+        --cor-texto: #333;
+        --cor-primaria: #007bff;
+        --cor-sombra: rgba(0, 0, 0, 0.1);
+        --cor-sucesso: #28a745;
+        --cor-erro: #dc3545;
+        --cor-borda: #dee2e6;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background-color: var(--cor-fundo);
+        color: var(--cor-texto);
+        margin: 0;
+        padding: 20px;
+        line-height: 1.6;
+      }
+
+      /* --- LAYOUT E CONTAINERS --- */
+      .container {
+        max-width: 1200px;
+        margin: auto;
+        display: grid;
+        gap: 20px;
+      }
+
+      header {
+        background: var(--cor-container);
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px var(--cor-sombra);
+        border-left: 5px solid var(--cor-primaria);
+        text-align: center;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        color: var(--cor-primaria);
+      }
+      h2 {
+        margin-bottom: 15px;
+        border-bottom: 2px solid var(--cor-borda);
+        padding-bottom: 10px;
+      }
+
+      .card {
+        background-color: var(--cor-container);
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px var(--cor-sombra);
+      }
+
+      /* --- DASHBOARD PRINCIPAL --- */
+      #dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+      }
+
+      .status-item {
+        text-align: center;
+      }
+
+      .status-item h3 {
+        margin: 0 0 10px 0;
+        font-size: 1rem;
+        color: #6c757d;
+      }
+
+      .status-item p {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 500;
+      }
+
+      #status-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      #status-indicator {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background-color: #6c757d; /* Cinza por padrão */
+        transition: background-color 0.5s ease;
+      }
+
+      /* --- CONTROLE REMOTO --- */
+      #controle form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      #controle input[type="text"] {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid var(--cor-borda);
+        border-radius: 5px;
+        font-size: 1rem;
+      }
+
+      #controle button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        background-color: var(--cor-primaria);
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      #controle button:hover {
+        background-color: #0056b3;
+      }
+
+      #feedback-message {
+        margin-top: 10px;
+        font-weight: bold;
+        height: 20px; /* Evita que o layout pule */
+      }
+      .feedback-success {
+        color: var(--cor-sucesso);
+      }
+      .feedback-error {
+        color: var(--cor-erro);
+      }
+
+      /* --- GRÁFICO --- */
+      #grafico-container {
+        position: relative;
+        height: 40vh;
+        min-height: 300px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Painel de Controle de Temperatura</h1>
+      </header>
+
+      <main id="dashboard" class="card">
+        <div class="status-item">
+          <h3>Temperatura Atual</h3>
+          <p><span id="temp-atual">--</span> °C</p>
+        </div>
+        <div class="status-item">
+          <h3>Setpoint</h3>
+          <p><span id="temp-desejada">--</span> °C</p>
+        </div>
+        <div class="status-item">
+          <h3>Erro</h3>
+          <p><span id="erro">--</span></p>
+        </div>
+        <div class="status-item">
+          <h3>Ângulo Servo</h3>
+          <p><span id="angulo-servo">--</span> °</p>
+        </div>
+        <div class="status-item">
+          <h3>Motor</h3>
+          <p><span id="velocidade-motor">--</span> %</p>
+        </div>
+        <div class="status-item">
+          <h3>Status</h3>
+          <div id="status-container">
+            <span id="status-indicator"></span>
+            <p id="status-texto" style="font-size: 1.5rem">Offline</p>
+          </div>
+        </div>
+      </main>
+
+      <section id="controle" class="card">
+        <h2>Controle Remoto</h2>
+        <form id="setpoint-form">
+          <input
+            type="text"
+            id="novo-setpoint"
+            placeholder="Digite a nova temperatura (ex: 25.5 ou 25,5)"
+            required
+          />
+          <button type="submit">Aplicar</button>
+        </form>
+        <p id="feedback-message"></p>
+      </section>
+
+      <section id="grafico" class="card">
+        <h2>Histórico de Temperatura (Últimos 15 minutos)</h2>
+        <div id="grafico-container">
+          <canvas id="tempChart"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // --- Elementos do DOM ---
+        const tempAtualElem = document.getElementById("temp-atual");
+        const tempDesejadaElem = document.getElementById("temp-desejada");
+        const erroElem = document.getElementById("erro");
+        const anguloServoElem = document.getElementById("angulo-servo");
+        const velocidadeMotorElem = document.getElementById("velocidade-motor");
+        const statusIndicator = document.getElementById("status-indicator");
+        const statusTexto = document.getElementById("status-texto");
+
+        const setpointForm = document.getElementById("setpoint-form");
+        const novoSetpointInput = document.getElementById("novo-setpoint");
+        const feedbackMessage = document.getElementById("feedback-message");
+
+        // --- Configuração do Gráfico ---
+        const MAX_DATA_POINTS = 900; // 15 minutos * 60 segundos/minuto
+        const ctx = document.getElementById("tempChart").getContext("2d");
+        const tempChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "Temperatura Atual (°C)",
+                data: [],
+                borderColor: "rgba(220, 53, 69, 1)",
+                backgroundColor: "rgba(220, 53, 69, 0.1)",
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true,
+              },
+              {
+                label: "Setpoint (°C)",
+                data: [],
+                borderColor: "rgba(0, 123, 255, 1)",
+                borderWidth: 2,
+                borderDash: [5, 5], // Linha tracejada
+                tension: 0.3,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                ticks: {
+                  maxRotation: 0,
+                  autoSkip: true,
+                  maxTicksLimit: 10,
+                },
+              },
+              y: {
+                beginAtZero: false,
+                title: {
+                  display: true,
+                  text: "Temperatura (°C)",
+                },
+              },
+            },
+            animation: {
+              duration: 250, // Animação suave
+            },
+            interaction: {
+              intersect: false,
+              mode: "index",
+            },
+          },
+        });
+
+        // --- Função para buscar dados e atualizar a UI ---
+        async function fetchDataAndUpdate() {
+          try {
+            const response = await fetch("/status");
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+
+            // 1. Atualizar Dashboard
+            tempAtualElem.textContent = data.temperatura_atual.toFixed(2);
+            tempDesejadaElem.textContent = data.temperatura_desejada.toFixed(2);
+            erroElem.textContent = data.erro.toFixed(2);
+            anguloServoElem.textContent = data.angulo_alvo.toFixed(1);
+            velocidadeMotorElem.textContent =
+              data.velocidade_ventoinha.toFixed(0);
+
+            // 2. Atualizar Status
+            statusIndicator.style.backgroundColor = "var(--cor-sucesso)";
+            statusTexto.textContent = "Operando";
+
+            // 3. Atualizar Gráfico
+            updateChart(data);
+          } catch (error) {
+            console.error("Erro ao buscar dados:", error);
+            statusIndicator.style.backgroundColor = "var(--cor-erro)";
+            statusTexto.textContent = "Erro";
+          }
+        }
+
+        // --- Função para atualizar o gráfico ---
+        function updateChart(data) {
+          const now = new Date().toLocaleTimeString("pt-BR");
+
+          // Adiciona novos dados
+          tempChart.data.labels.push(now);
+          tempChart.data.datasets[0].data.push(data.temperatura_atual);
+          tempChart.data.datasets[1].data.push(data.temperatura_desejada);
+
+          // Remove dados antigos para manter o gráfico com no máximo MAX_DATA_POINTS
+          if (tempChart.data.labels.length > MAX_DATA_POINTS) {
+            tempChart.data.labels.shift();
+            tempChart.data.datasets.forEach((dataset) => {
+              dataset.data.shift();
+            });
+          }
+
+          // Redesenha o gráfico
+          tempChart.update();
+        }
+
+        // --- Event Listener para o formulário de setpoint ---
+        setpointForm.addEventListener("submit", async (e) => {
+          e.preventDefault(); // Impede o recarregamento da página
+
+          // Validação: aceita ponto e vírgula
+          const tempValue = novoSetpointInput.value.trim().replace(",", ".");
+          const newTemp = parseFloat(tempValue);
+
+          if (isNaN(newTemp)) {
+            showFeedback("Por favor, insira um número válido.", "error");
+            return;
+          }
+
+          try {
+            const response = await fetch(
+              `/set_temperatura?temperatura=${newTemp}`
+            );
+            const result = await response.json();
+
+            if (result.status === "success") {
+              showFeedback("Setpoint atualizado com sucesso!", "success");
+              tempDesejadaElem.textContent =
+                result.temperatura_desejada.toFixed(2);
+              novoSetpointInput.value = "";
+            } else {
+              throw new Error(result.message || "Erro desconhecido");
+            }
+          } catch (error) {
+            console.error("Erro ao enviar setpoint:", error);
+            showFeedback("Falha ao comunicar com o dispositivo.", "error");
+          }
+        });
+
+        // --- Função para mostrar feedback ao usuário ---
+        function showFeedback(message, type) {
+          feedbackMessage.textContent = message;
+          feedbackMessage.className =
+            type === "success" ? "feedback-success" : "feedback-error";
+
+          // Limpa a mensagem após 4 segundos
+          setTimeout(() => {
+            feedbackMessage.textContent = "";
+            feedbackMessage.className = "";
+          }, 4000);
+        }
+
+        // --- Iniciar o processo ---
+        fetchDataAndUpdate(); // Chama uma vez para carregar os dados iniciais
+        setInterval(fetchDataAndUpdate, 1000); // Atualiza a cada 1 segundo
+      });
+    </script>
+  </body>
+</html>

@@ -73,4 +73,18 @@ void http_server_set_content_type(http_content_type_t type);
  */
 void http_server_parse_float_param(const char *req, const char *param, float *value);
 
+/**
+ * @brief Lê o conteúdo de um arquivo HTML e o armazena em uma string.
+ *
+ * Esta função abre o arquivo especificado, lê todo o seu conteúdo e o
+ * aloca dinamicamente em uma string. É responsabilidade do chamador
+ * liberar a memória alocada usando free() quando a string não for mais necessária.
+ *
+ * @param filename O nome do arquivo HTML a ser lido.
+ * @return Um ponteiro para a string que contém o conteúdo do arquivo,
+ * ou NULL em caso de erro (arquivo não encontrado, erro de leitura,
+ * ou erro de alocação de memória).
+ */
+char *http_server_read_html_file(const char *filename);
+
 #endif // PICO_HTTP_SERVER_H

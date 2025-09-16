@@ -19,10 +19,10 @@
 #define MEM_LIBC_MALLOC 0
 #endif
 #define MEM_ALIGNMENT 4
-#define MEM_SIZE 16000
+#define MEM_SIZE 32000 // Aumentado de 16000 para 32000
 #define MEMP_NUM_TCP_SEG 64
 #define MEMP_NUM_ARP_QUEUE 10
-#define PBUF_POOL_SIZE 32
+#define PBUF_POOL_SIZE 48 // Aumentado de 32 para 48
 #define LWIP_ARP 1
 #define LWIP_ETHERNET 1
 #define LWIP_ICMP 1

@@ -1,6 +1,7 @@
 #include "pico_http_server.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "pico/stdio.h"
 
 // --- Variáveis internas da biblioteca ---
@@ -13,7 +14,7 @@ static http_content_type_t response_content_type = HTTP_CONTENT_TYPE_HTML;
 // Estrutura para gerenciar o estado da conexão
 struct http_state
 {
-    char response[8192]; // Tamanho do buffer de resposta
+    char response[16384]; // Tamanho do buffer de resposta
     size_t len;
     size_t sent;
 };
@@ -182,4 +183,66 @@ void http_server_parse_float_param(const char *req, const char *param, float *va
     {
         *value = atof(found + strlen(param));
     }
+}
+
+char *http_server_read_html_file(const char *filename)
+{
+    FILE *file;
+    long file_size;
+    char *html_content_raw = NULL;
+    char *html_content_minified = NULL;
+    int write_index = 0;
+
+    file = fopen(filename, "r");
+    if (file == NULL)
+    {
+        perror("Erro ao abrir o arquivo");
+        return NULL;
+    }
+
+    fseek(file, 0, SEEK_END);
+    file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    html_content_raw = (char *)malloc(file_size + 1);
+    if (html_content_raw == NULL)
+    {
+        perror("Erro ao alocar memória para o buffer");
+        fclose(file);
+        return NULL;
+    }
+
+    long bytes_read = fread(html_content_raw, 1, file_size, file);
+    if (bytes_read != file_size)
+    {
+        perror("Erro ao ler o arquivo");
+        free(html_content_raw);
+        fclose(file);
+        return NULL;
+    }
+
+    html_content_raw[file_size] = '\0';
+    fclose(file);
+
+    html_content_minified = (char *)malloc(file_size + 1);
+    if (html_content_minified == NULL)
+    {
+        perror("Erro ao alocar memória para a string minificada");
+        free(html_content_raw);
+        return NULL;
+    }
+
+    for (int i = 0; i < file_size; i++)
+    {
+        if (html_content_raw[i] != '\n' && html_content_raw[i] != '\r')
+        {
+            html_content_minified[write_index++] = html_content_raw[i];
+        }
+    }
+
+    html_content_minified[write_index] = '\0';
+
+    free(html_content_raw);
+
+    return html_content_minified;
 }
